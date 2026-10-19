@@ -8,7 +8,7 @@
   const bar = document.createElement('div');
   bar.className = 'speech-tools';
   bar.setAttribute('aria-label', '음성 읽기');
-  bar.innerHTML = '<button type="button" id="speechReadAll">전체 읽기</button><button type="button" id="speechPause" disabled>일시정지</button><button type="button" id="speechStop" disabled>정지</button><label for="speechRate">읽기 속도 <select id="speechRate"><option value="0.75">0.75배속</option><option value="1" selected>1배속</option><option value="1.25">1.25배속</option><option value="1.5">1.5배속</option><option value="1.75">1.75배속</option><option value="2">2배속</option></select></label><span class="speech-status" role="status" aria-live="polite">질문 → 모범답안 → 용어 설명 → 암기 문장</span>';
+  bar.innerHTML = '<button type="button" id="speechReadAll">전체 읽기</button><button type="button" id="speechPause" disabled>일시정지</button><button type="button" id="speechStop" disabled>정지</button><label for="speechRate">읽기 속도 <select id="speechRate"><option value="0.75">0.75배속</option><option value="1" selected>1배속</option><option value="1.25">1.25배속</option><option value="1.5">1.5배속</option><option value="1.75">1.75배속</option><option value="2">2배속</option></select></label><span class="speech-status" role="status" aria-live="polite">모범답안 → 암기 문장</span>';
   document.querySelector('.exam-guide-intro').append(bar);
   const all = bar.querySelector('#speechReadAll');
   const pause = bar.querySelector('#speechPause');
@@ -22,11 +22,10 @@
   try { const saved = localStorage.getItem(speedKey); if ([...rate.options].some(o => o.value === saved)) rate.value = saved; } catch (_) {}
   const text = el => (el?.textContent || '').replace(/\s+/g, ' ').trim();
   function parts(q, index) {
-    const title = text(q.querySelector('.exam-question'));
     const answer = q.querySelector('.exam-answer');
     const paragraphs = [...answer.querySelectorAll(':scope > p')].map(text);
-    const glossary = [...answer.querySelectorAll('.exam-glossary > div')].map(d => `${text(d.querySelector('dt'))}. ${text(d.querySelector('dd'))}`);
-    return [`${index + 1}번 문제. ${title}`, '모범답안. ' + paragraphs.join(' '), ...glossary]
+    const memory = text(answer.querySelector('.exam-glossary .memory dd'));
+    return ['모범답안. ' + paragraphs.join(' '), '암기. ' + memory]
       .flatMap(s => s.match(/[^.!?。！？]+[.!?。！？]*/g) || [s])
       .filter(s => s.trim()).map(s => ({ text: s.trim(), index }));
   }
