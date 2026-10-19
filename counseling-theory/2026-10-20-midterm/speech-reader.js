@@ -26,9 +26,10 @@
     const answer = q.querySelector('.exam-answer');
     const paragraphs = [...answer.querySelectorAll(':scope > p')].map(text);
     const memory = text(answer.querySelector('.exam-glossary .memory dd'));
-    return [`${index + 1}번 문제. ${title}`, '모범답안. ' + paragraphs.join(' '), '암기. ' + memory]
+    const body = ['모범답안. ' + paragraphs.join(' '), '암기. ' + memory]
       .flatMap(s => s.match(/[^.!?。！？]+[.!?。！？]*/g) || [s])
       .filter(s => s.trim()).map(s => ({ text: s.trim(), index }));
+    return [{ text: `${index + 1}번 문제, ${title}`, index }, ...body];
   }
   function reset(message) {
     active = false; paused = false; pause.disabled = true; stop.disabled = true;
