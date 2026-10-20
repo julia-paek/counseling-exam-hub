@@ -91,4 +91,4 @@ document.getElementById('examShowAnswersAll').addEventListener('click',()=>qs.fo
 document.getElementById('examCloseAll').addEventListener('click',()=>qs.forEach(q=>{q.open=false;const answer=q.querySelector('.exam-answer');answer.classList.remove('practice-visible');answer.classList.add('practice-hidden');const reveal=q.querySelector('.show-answer');reveal.textContent='모범답안 보기';reveal.setAttribute('aria-expanded','false');}));
 clearAll.addEventListener('click',()=>{if(!confirm('작성한 답안을 모두 지울까요?'))return;qs.forEach((q,i)=>{localStorage.removeItem(storagePrefix+(i+1));q.querySelector('textarea').value='';});updateCount();});
 updateCount();
-</script><script src="exam-player.js?v=09c7e8065856"></script></body></html>
+</script><script src="exam-player.js?v=058a5c25b320"></script></body></html>
