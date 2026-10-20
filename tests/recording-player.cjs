@@ -67,6 +67,7 @@ const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/20
  assert.equal(await page.locator('#midterm-answers .exam-qa').nth(13).locator('.memory dd.is-reading-part').count(),1);
  const q14=page.locator('#midterm-answers .exam-qa').nth(13);
  await q14.locator('.read-question').click();
+ await page.waitForFunction(()=>{const a=document.querySelector('#examAudio');return !a.paused&&!a.seeking&&a.readyState>=2;});
  await page.locator('#examAudio').evaluate((a,end)=>{a.currentTime=end-0.01;a.dispatchEvent(new Event('timeupdate'));},data.full.questions[13].end);
  assert.equal(await page.locator('#examAudio').evaluate(a=>a.paused),true);
  assert.match(await page.locator('.speech-status').innerText(),/14번 문항을 모두/);

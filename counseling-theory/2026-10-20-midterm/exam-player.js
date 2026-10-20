@@ -165,6 +165,8 @@
       entry.q.querySelector('.practice-actions').prepend(b);
     });
     list.audio.addEventListener('play',()=>{
+      // A queued play event may arrive after the user has already paused/seeks.
+      if(list.audio.paused)return;
       if(current!==list){
         current.audio.pause();current=list;single=false;completed=false;lastNode=null;index=position(list.audio.currentTime);
       }else if(index<0){single=false;index=position(list.audio.currentTime);}
