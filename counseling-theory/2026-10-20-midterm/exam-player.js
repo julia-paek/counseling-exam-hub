@@ -83,7 +83,7 @@
   for(const card of [audioCard,priorityAudioCard]){
     for(const el of card.querySelectorAll('source,a[download]')){
       const key=el.tagName==='SOURCE'?'src':'href';
-      el.setAttribute(key,el.getAttribute(key)+'?v=volume-20261020-v2');
+      el.setAttribute(key,el.getAttribute(key)+'?v=q34-ai-20261020-v3');
     }
     card.querySelector('audio').load();
   }
@@ -92,6 +92,13 @@
     [all,pause,stop,prev,next,priorityRead].forEach(b=>b.disabled=true);
     status.textContent='녹음 정보를 불러오지 못했습니다. 새로고침해 주세요.';
     return;
+  }
+  if(recording.aiQuestions?.length){
+    for(const card of [audioCard,priorityAudioCard]){
+      const note=document.createElement('p');note.className='priority-intro';
+      note.textContent='34번만 수정 답안의 여성 AI 음성 · 나머지는 본인 녹음';
+      card.querySelector('audio').before(note);
+    }
   }
   const full={audio,entries:regular,map:recording.full.questions,name:'전체 35문항'};
   const focus={audio:priorityAudio,entries:priority,map:recording.priority.questions,name:'핵심 19문항'};

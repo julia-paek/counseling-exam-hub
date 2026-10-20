@@ -24,6 +24,13 @@ const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/20
  assert.equal(await page.locator('.read-question').count(),54);
  assert.equal(await page.locator('#speechRate').inputValue(),'1');
  assert.equal(data.bakedRate,1);
+ assert.deepEqual(data.aiQuestions,[34]);
+ assert.equal(data.full.questions.find(q=>q.number===34).voice,'ai');
+ assert.equal(data.priority.questions.find(q=>q.number===34).voice,'ai');
+ const answer34=await page.locator('#midterm-answers .exam-qa').nth(33).locator('.exam-answer > p').textContent();
+ assert.match(answer34,/두 사람이 각자의 익숙한 방식/);
+ assert.match(answer34,/자신과 타인에 대한 기존 믿음/);
+ assert.equal(await page.locator('#priority-question-34 .exam-answer > p').textContent(),answer34);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.click('#speechReadAll');
  await page.waitForFunction(()=>!document.querySelector('#examAudio').paused);
@@ -85,6 +92,11 @@ const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/20
  await page.screenshot({path:'/tmp/own-voice-priority-mobile.png'});
  await page.setViewportSize({width:1100,height:850});await page.locator('#audioTitle').scrollIntoViewIfNeeded();
  await page.screenshot({path:'/tmp/own-voice-player-desktop.png'});
- console.log(JSON.stringify({questions:observed.length,priority:selected.length,ownRecordingOnly:true,questionAnswerMemorySync:true,pauseResume:true,singleQuestionStop:true,durations,errors}));
+ const revised=page.locator('#midterm-answers .exam-qa').nth(33);
+ await revised.evaluate(q=>q.open=true);
+ await revised.locator('.show-answer').click();
+ await revised.scrollIntoViewIfNeeded();
+ await page.screenshot({path:'/tmp/exam-q34-ai-revised.png'});
+ console.log(JSON.stringify({questions:observed.length,priority:selected.length,recordedAudioPlayback:true,aiQuestions:data.aiQuestions,questionAnswerMemorySync:true,pauseResume:true,singleQuestionStop:true,durations,errors}));
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
