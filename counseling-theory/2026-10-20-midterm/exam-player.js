@@ -10,7 +10,7 @@
   const audioCard = document.createElement('section');
   audioCard.className = 'priority-section'; audioCard.style.marginTop = '24px';
   audioCard.setAttribute('aria-labelledby','audioTitle');
-  audioCard.innerHTML = '<h2 id="audioTitle">내 목소리 · 전체 35문항</h2><p class="priority-intro">질문 → 답안 → 암기 · 잡음 억제 · 원본 속도</p><audio id="examAudio" controls preload="metadata" style="width:100%" aria-label="내 목소리 전체 35문항"><source src="counseling-midterm-own-35.m4a" type="audio/mp4"></audio><div class="speech-top-links"><a href="counseling-midterm-own-35.m4a" download="상담및심리치료이론_중간고사_내목소리_35문항_원본속도.m4a">35문항 음성파일 다운로드 ↓</a></div>';
+  audioCard.innerHTML = '<h2 id="audioTitle">음성듣기 · 전체 35문항</h2><p class="priority-intro">질문 → 답안 → 암기 · 잡음 억제 · 원본 속도</p><audio id="examAudio" controls preload="metadata" style="width:100%" aria-label="내 목소리 전체 35문항"><source src="counseling-midterm-own-35.m4a" type="audio/mp4"></audio><div class="speech-top-links"><a href="counseling-midterm-own-35.m4a" download="상담및심리치료이론_중간고사_내목소리_35문항_원본속도.m4a">35문항 음성파일 다운로드 ↓</a></div>';
   document.querySelector('#midterm-answers').before(audioCard);
   const audio = audioCard.querySelector('audio');
   const section = document.createElement('section');
@@ -79,6 +79,14 @@
   if ('ResizeObserver' in window) new ResizeObserver(measure).observe(bar);
   window.addEventListener('resize',measure);measure();
 
+  // Refresh both playback and downloads when the mastered audio changes.
+  for(const card of [audioCard,priorityAudioCard]){
+    for(const el of card.querySelectorAll('source,a[download]')){
+      const key=el.tagName==='SOURCE'?'src':'href';
+      el.setAttribute(key,el.getAttribute(key)+'?v=volume-20261020-v2');
+    }
+    card.querySelector('audio').load();
+  }
   const recording=window.EXAM_RECORDING;
   if(!recording || recording.full.questions.length!==35 || recording.priority.questions.length!==19){
     [all,pause,stop,prev,next,priorityRead].forEach(b=>b.disabled=true);
