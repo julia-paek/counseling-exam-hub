@@ -12,7 +12,7 @@
   const audioCard = document.createElement('section');
   audioCard.className = 'priority-section'; audioCard.style.marginTop = '24px';
   audioCard.setAttribute('aria-labelledby','audioTitle');
-  audioCard.innerHTML = '<h2 id="audioTitle">35문항 음성파일</h2><p class="priority-intro">질문·사례 → 모범답안 → 암기 문장 · M4A</p><audio id="examAudio" controls preload="metadata" style="width:100%" aria-label="중간고사 35문항 음성파일"><source src="counseling-theory-midterm-35.m4a" type="audio/mp4"></audio><div class="speech-top-links"><a href="counseling-theory-midterm-35.m4a" download="상담및심리치료이론_중간고사_35문항.m4a">음성파일 다운로드 ↓</a></div>';
+  audioCard.innerHTML = '<h2 id="audioTitle">35문항 여성 음성 · 1.5배속</h2><p class="priority-intro">질문·사례 → 모범답안 → 암기 문장 · 원문 그대로 · 용어 설명 제외 · 기본 여성 음성(Yuna)</p><audio id="examAudio" controls preload="metadata" style="width:100%" aria-label="중간고사 35문항 여성 음성파일"><source src="counseling-theory-midterm-35-female-1_5x.m4a" type="audio/mp4"></audio><div class="speech-top-links"><a href="counseling-theory-midterm-35-female-1_5x.m4a" download="상담및심리치료이론_중간고사_35문항_여성_1.5배속.m4a">여성 음성파일 다운로드 ↓</a></div>';
   document.querySelector('#midterm-answers').before(audioCard);
   const audio = audioCard.querySelector('audio');
   const section = document.createElement('section');
@@ -68,7 +68,7 @@
   document.querySelector('.exam-guide-intro').append(links);
   const bar = document.createElement('div'); bar.className='speech-tools';
   bar.setAttribute('aria-label','고정 음성 재생바');
-  bar.innerHTML='<button type="button" id="speechPrev" disabled>이전 문항</button><button type="button" id="speechPause" disabled>일시정지</button><button type="button" id="speechNext" disabled>다음 문항</button><button type="button" id="speechReadAll">전체 35 읽기</button><button type="button" id="speechStop" disabled>정지</button><label for="speechRate">배속 <select id="speechRate"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option></select></label><span class="speech-status" role="status" aria-live="polite">질문 → 모범답안 → 암기 문장</span>';
+  bar.innerHTML='<button type="button" id="speechPrev" disabled>이전 문항</button><button type="button" id="speechPause" disabled>일시정지</button><button type="button" id="speechNext" disabled>다음 문항</button><button type="button" id="speechReadAll">전체 35 읽기</button><button type="button" id="speechStop" disabled>정지</button><label for="speechRate">배속 <select id="speechRate"><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5" selected>1.5×</option><option value="1.75">1.75×</option><option value="2">2×</option></select></label><span class="speech-status" role="status" aria-live="polite">질문 → 모범답안 → 암기 문장</span>';
   document.body.append(bar);
   const all=bar.querySelector('#speechReadAll'), pause=bar.querySelector('#speechPause'), stop=bar.querySelector('#speechStop');
   const prev=bar.querySelector('#speechPrev'), next=bar.querySelector('#speechNext'), rate=bar.querySelector('#speechRate');
@@ -78,9 +78,12 @@
   window.addEventListener('resize',measure);measure();
   let queue=[],cursor=0,session=0,active=false,paused=false,currentUtterance=null;
   let readingNode=null,group=regular,groupName='전체 35문항',audioMode=false;
-  const speedKey='counseling-exam-speech-rate-v1';
+  const audioBaseRate=1.5;
+  const speedKey='counseling-exam-speech-rate-v2';
   try {const v=localStorage.getItem(speedKey);if([...rate.options].some(o=>o.value===v))rate.value=v;}catch(_){}
-  audio.playbackRate=Number(rate.value);
+  // The download already contains 1.5x audio; avoid applying that speed twice.
+  audio.defaultPlaybackRate=Number(rate.value)/audioBaseRate;
+  audio.playbackRate=Number(rate.value)/audioBaseRate;
   function audioControls() {
     pause.disabled=false;stop.disabled=false;prev.disabled=true;next.disabled=true;
     pause.textContent=audio.paused?'계속 읽기':'일시정지';
@@ -122,7 +125,8 @@
     if(readingNode!==q){readingNode=q;q.style.scrollMarginTop='24px';q.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}
     controls();status.textContent=statusText();
     const u=new SpeechSynthesisUtterance(item.text);currentUtterance=u;u.lang='ko-KR';u.rate=Number(rate.value);
-    const voice=synth.getVoices().find(v=>/^ko[-_]/i.test(v.lang));if(voice)u.voice=voice;
+    const koreanVoices=synth.getVoices().filter(v=>/^ko[-_]/i.test(v.lang));
+    const voice=koreanVoices.find(v=>/Yuna|유나|SunHi|선희|Anna|여성/i.test(v.name))||koreanVoices[0];if(voice)u.voice=voice;
     u.onend=()=>{if(token===session){currentUtterance=null;cursor++;speakNext(token);}};
     u.onerror=e=>{if(token!==session||e.error==='interrupted'||e.error==='canceled')return;cancel('음성을 재생하지 못했습니다. 한국어 음성 설정을 확인하고 다시 눌러 주세요.');};
     synth.speak(u);
@@ -159,13 +163,14 @@
   });
   rate.addEventListener('change',()=>{
     try{localStorage.setItem(speedKey,rate.value);}catch(_){}
-    audio.playbackRate=Number(rate.value);if(audioMode)audioControls();
+    audio.defaultPlaybackRate=Number(rate.value)/audioBaseRate;
+    audio.playbackRate=Number(rate.value)/audioBaseRate;if(audioMode)audioControls();
     if(active){session++;synth.cancel();currentUtterance=null;if(!paused){synth.resume();speakNext(session);}else{controls();status.textContent=statusText();}}
   });
   audio.addEventListener('play',()=>{
     cancel('');audioMode=true;audioControls();
     if('mediaSession' in navigator && 'MediaMetadata' in window){
-      navigator.mediaSession.metadata=new MediaMetadata({title:'상담및심리치료이론 중간고사 · 35문항',artist:'질문 · 모범답안 · 암기',album:'2026-10-20 중간고사'});
+      navigator.mediaSession.metadata=new MediaMetadata({title:'상담및심리치료이론 중간고사 · 35문항',artist:'Yuna · 질문 · 모범답안 · 암기',album:'2026-10-20 중간고사'});
     }
   });
   audio.addEventListener('pause',()=>{if(audioMode)audioControls();});
