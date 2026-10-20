@@ -24,7 +24,11 @@ const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/20
  assert.equal(await page.locator('.read-question').count(),54);
  assert.equal(await page.locator('#speechRate').inputValue(),'1');
  assert.equal(data.bakedRate,1);
- assert.deepEqual(data.aiQuestions,[34]);
+ assert.deepEqual(data.aiQuestions,[10,34]);
+ for(const list of [data.full,data.priority])assert.equal(list.questions.find(q=>q.number===10).voice,'ai');
+ const answer10=await page.locator('#midterm-answers .exam-qa').nth(9).locator('.exam-answer > p').textContent();
+ for(const term of ['주변 환경','자신의 경험','감정 조절','스트레스 대처','자아상','대인관계'])assert.ok(answer10.includes(term));
+ assert.equal(await page.locator('#priority-question-10 .exam-answer > p').textContent(),answer10);
  assert.equal(data.full.questions.find(q=>q.number===34).voice,'ai');
  assert.equal(data.priority.questions.find(q=>q.number===34).voice,'ai');
  const answer34=await page.locator('#midterm-answers .exam-qa').nth(33).locator('.exam-answer > p').textContent();
@@ -94,7 +98,7 @@ const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/20
  await page.screenshot({path:'/tmp/own-voice-player-desktop.png'});
  const revised=page.locator('#midterm-answers .exam-qa').nth(33);
  await revised.evaluate(q=>q.open=true);
- await revised.locator('.show-answer').click();
+ if(await revised.locator('.show-answer').getAttribute('aria-expanded')!=='true')await revised.locator('.show-answer').click();
  await revised.scrollIntoViewIfNeeded();
  await page.screenshot({path:'/tmp/exam-q34-ai-revised.png'});
  console.log(JSON.stringify({questions:observed.length,priority:selected.length,recordedAudioPlayback:true,aiQuestions:data.aiQuestions,questionAnswerMemorySync:true,pauseResume:true,singleQuestionStop:true,durations,errors}));
