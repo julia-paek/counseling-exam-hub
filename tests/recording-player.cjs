@@ -24,10 +24,14 @@ const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/20
  assert.equal(await page.locator('.read-question').count(),54);
  assert.equal(await page.locator('#speechRate').inputValue(),'1');
  assert.equal(data.bakedRate,1);
- assert.deepEqual(data.aiQuestions,[10,34]);
+ assert.deepEqual(data.aiQuestions,[9,10,34]);
+ const answer9=await page.locator('#midterm-answers .exam-qa').nth(8).locator('.exam-answer > p').textContent();
+ for(const term of ['임상 증상','대인관계 적응','스트레스'])assert.ok(answer9.includes(term));
+ assert.ok(!answer9.includes('타당도'));
+ assert.equal(data.full.questions.find(q=>q.number===9).voice,'ai');
  for(const list of [data.full,data.priority])assert.equal(list.questions.find(q=>q.number===10).voice,'ai');
  const answer10=await page.locator('#midterm-answers .exam-qa').nth(9).locator('.exam-answer > p').textContent();
- for(const term of ['주변 환경','자신의 경험','감정 조절','스트레스 대처','자아상','대인관계'])assert.ok(answer10.includes(term));
+ for(const term of ['모호한 잉크반점','환경 지각','사고 방식','감정 조절','스트레스 대처','자아상','대인관계'])assert.ok(answer10.includes(term));
  assert.equal(await page.locator('#priority-question-10 .exam-answer > p').textContent(),answer10);
  assert.equal(data.full.questions.find(q=>q.number===34).voice,'ai');
  assert.equal(data.priority.questions.find(q=>q.number===34).voice,'ai');

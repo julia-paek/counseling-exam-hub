@@ -83,7 +83,7 @@
   for(const card of [audioCard,priorityAudioCard]){
     for(const el of card.querySelectorAll('source,a[download]')){
       const key=el.tagName==='SOURCE'?'src':'href';
-      el.setAttribute(key,el.getAttribute(key)+'?v=q10-q34-ai-20261020-v4');
+      el.setAttribute(key,el.getAttribute(key)+'?v=source-faithful-20261020-v5');
     }
     card.querySelector('audio').load();
   }
@@ -96,7 +96,8 @@
   if(recording.aiQuestions?.length){
     for(const card of [audioCard,priorityAudioCard]){
       const note=document.createElement('p');note.className='priority-intro';
-      note.textContent=recording.aiQuestions.join('·')+'번은 수정 답안의 여성 AI 음성 · 나머지는 본인 녹음';
+      const included=recording.aiQuestions.filter(n=>(card===audioCard?recording.full:recording.priority).questions.some(q=>q.number===n));
+      note.textContent=included.join('·')+'번은 수정 답안의 여성 AI 음성 · 나머지는 본인 녹음';
       card.querySelector('audio').before(note);
     }
   }
