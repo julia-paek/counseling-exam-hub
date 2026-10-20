@@ -1,0 +1,89 @@
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const url=process.env.EXAM_TEST_URL||'http://127.0.0.1:8891/counseling-theory/2026-10-20-midterm/';
+(async()=>{
+ const browser=await chromium.launch();
+ const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{if('speechSynthesis' in window)window.speechSynthesis.speak=()=>{throw Error('Synthetic voice must not be used');};});
+ const response=await page.goto(url);assert.equal(response.status(),200);
+ await page.locator('#priorityTitle').waitFor();
+ await page.waitForFunction(()=>[...document.querySelectorAll('audio')].every(a=>a.readyState>=1));
+ const data=await page.evaluate(()=>window.EXAM_RECORDING);
+ const selected=[3,7,10,12,13,14,16,17,18,19,20,22,23,24,25,26,32,33,34];
+ assert.deepEqual(data.full.questions.map(s=>s.number),Array.from({length:35},(_,i)=>i+1));
+ assert.deepEqual(data.priority.questions.map(s=>s.number),selected);
+ for(const list of [data.full,data.priority]){
+  for(let i=0;i<list.questions.length;i++){
+   const q=list.questions[i];assert.ok(q.start<=q.answer&&q.answer<q.memory&&q.memory<q.end);
+   if(i)assert.ok(Math.abs(q.start-list.questions[i-1].end)<0.001);
+  }
+ }
+ assert.equal(await page.locator('#midterm-answers .exam-qa').count(),35);
+ assert.equal(await page.locator('#priority-19 .exam-qa').count(),19);
+ assert.equal(await page.locator('.read-question').count(),54);
+ assert.equal(await page.locator('#speechRate').inputValue(),'1');
+ assert.equal(data.bakedRate,1);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.click('#speechReadAll');
+ await page.waitForFunction(()=>!document.querySelector('#examAudio').paused);
+ assert.match(await page.locator('.speech-status').innerText(),/원문 1번/);
+ await page.click('#speechPause');assert.equal(await page.locator('#examAudio').evaluate(a=>a.paused),true);
+ const pausedAt=await page.locator('#examAudio').evaluate(a=>a.currentTime);
+ await page.click('#speechPause');assert.equal(await page.locator('#examAudio').evaluate(a=>a.paused),false);
+ assert.ok((await page.locator('#examAudio').evaluate(a=>a.currentTime))>=pausedAt);
+ await page.click('#speechNext');assert.match(await page.locator('.speech-status').innerText(),/원문 2번/);
+ await page.click('#speechPrev');assert.match(await page.locator('.speech-status').innerText(),/원문 1번/);
+ await page.selectOption('#speechRate','1.5');assert.equal(await page.locator('#examAudio').evaluate(a=>a.playbackRate),1.5);
+ await page.selectOption('#speechRate','1');assert.equal(await page.locator('#examAudio').evaluate(a=>a.playbackRate),1);
+ await page.click('#speechStop');
+ const observed=[];
+ for(let i=0;i<35;i++){
+  const q=page.locator('#midterm-answers .exam-qa').nth(i);
+  await q.evaluate(e=>e.open=true);await q.locator('.read-question').click();
+  const t=await page.locator('#examAudio').evaluate(a=>a.currentTime);
+  assert.ok(Math.abs(t-data.full.questions[i].start)<0.7,[i+1,t,data.full.questions[i].start].join(':'));
+  assert.match(await page.locator('.speech-status').innerText(),new RegExp('원문 '+(i+1)+'번'));
+  observed.push(i+1);
+ }
+ await page.click('#speechStop');await page.click('#priorityRead');
+ await page.waitForFunction(()=>!document.querySelector('#priorityAudio').paused);
+ assert.equal(await page.locator('#examAudio').evaluate(a=>a.paused),true);
+ assert.match(await page.locator('.speech-status').innerText(),/원문 3번/);
+ await page.click('#speechNext');assert.match(await page.locator('.speech-status').innerText(),/원문 7번/);
+ await page.click('#speechPrev');assert.match(await page.locator('.speech-status').innerText(),/원문 3번/);
+ for(const [i,n] of selected.entries()){
+  const q=page.locator('#priority-question-'+n);
+  await q.evaluate(e=>e.open=true);await q.locator('.read-question').click();
+  assert.ok(Math.abs((await page.locator('#priorityAudio').evaluate(a=>a.currentTime))-data.priority.questions[i].start)<0.7);
+  assert.match(await page.locator('.speech-status').innerText(),new RegExp('원문 '+n+'번'));
+ }
+ await page.click('#speechStop');await page.click('#speechReadAll');
+ await page.locator('#examAudio').evaluate((a,cue)=>{a.pause();a.currentTime=cue.answer+0.1;a.dispatchEvent(new Event('timeupdate'));},data.full.questions[13]);
+ assert.match(await page.locator('.speech-status').innerText(),/원문 14번 · 답안/);
+ assert.ok(await page.locator('#midterm-answers .exam-qa').nth(13).locator('.exam-answer > p.is-reading-part').count());
+ await page.locator('#examAudio').evaluate((a,cue)=>{a.currentTime=cue.memory+0.1;a.dispatchEvent(new Event('timeupdate'));},data.full.questions[13]);
+ assert.match(await page.locator('.speech-status').innerText(),/원문 14번 · 암기/);
+ assert.equal(await page.locator('#midterm-answers .exam-qa').nth(13).locator('.memory dd.is-reading-part').count(),1);
+ const q14=page.locator('#midterm-answers .exam-qa').nth(13);
+ await q14.locator('.read-question').click();
+ await page.locator('#examAudio').evaluate((a,end)=>{a.currentTime=end-0.01;a.dispatchEvent(new Event('timeupdate'));},data.full.questions[13].end);
+ assert.equal(await page.locator('#examAudio').evaluate(a=>a.paused),true);
+ assert.match(await page.locator('.speech-status').innerText(),/14번 문항을 모두/);
+ await page.click('#speechPause');assert.equal(await page.locator('#examAudio').evaluate(a=>a.paused),false);
+ await page.click('#speechStop');await page.click('#priorityAnswers');
+ await page.locator('#priority-answer-3').fill('검증용 답안');
+ assert.equal(await page.locator('#practice-answer-3').inputValue(),'검증용 답안');
+ await page.locator('#priority-question-3').getByRole('button',{name:'이 답안 지우기',exact:true}).click();
+ assert.equal(await page.locator('#practice-answer-3').inputValue(),'');
+ assert.equal(await page.evaluate(()=>new Set([...document.querySelectorAll('[id]')].map(e=>e.id)).size),await page.locator('[id]').count());
+ const durations=await page.locator('audio').evaluateAll(as=>as.map(a=>a.duration));
+ assert.ok(Math.abs(durations[0]-data.full.duration)<0.2);assert.ok(Math.abs(durations[1]-data.priority.duration)<0.2);
+ assert.deepEqual(errors,[]);
+ await page.click('#priorityClose');await page.locator('#priorityTitle').scrollIntoViewIfNeeded();
+ await page.screenshot({path:'/tmp/own-voice-priority-mobile.png'});
+ await page.setViewportSize({width:1100,height:850});await page.locator('#audioTitle').scrollIntoViewIfNeeded();
+ await page.screenshot({path:'/tmp/own-voice-player-desktop.png'});
+ console.log(JSON.stringify({questions:observed.length,priority:selected.length,ownRecordingOnly:true,questionAnswerMemorySync:true,pauseResume:true,singleQuestionStop:true,durations,errors}));
+ await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});
